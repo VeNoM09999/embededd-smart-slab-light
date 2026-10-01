@@ -94,8 +94,8 @@ macro_rules! mk_static {
     }};
 }
 
-const SSID: &str = "***REMOVED***";
-const PASSWORD: &str = "***REMOVED***";
+const SSID: &str = "SSID";
+const PASSWORD: &str = "PASSWORD";
 
 static APP_CORE_STACK: static_cell::StaticCell<esphal_Stack<8192>> = static_cell::StaticCell::new();
 static OTA_EXECUTOR: static_cell::StaticCell<Executor> = static_cell::StaticCell::new();
