@@ -1,0 +1,78 @@
+<html>
+
+<body>
+    <input type="file" id="firmware">
+    <button onclick="uploadFirmware()">Upload</button>
+
+    <pre id="status"></pre>
+
+    <script>
+        const CRC32_TABLE = (() => {
+            const table = new Uint32Array(256);
+
+            for (let i = 0; i < 256; i++) {
+                let crc = i;
+
+                for (let j = 0; j < 8; j++) {
+                    crc = (crc & 1)
+                        ? (crc >>> 1) ^ 0xEDB88320
+                        : (crc >>> 1);
+                }
+
+                table[i] = crc >>> 0;
+            }
+
+            return table;
+        })();
+
+        async function calculateCrc32(file) {
+            const data = new Uint8Array(await file.arrayBuffer());
+
+            let crc = 0xFFFFFFFF;
+
+            for (const byte of data) {
+                crc = CRC32_TABLE[(crc ^ byte) & 0xFF] ^ (crc >>> 8);
+            }
+
+            return (crc ^ 0xFFFFFFFF) >>> 0;
+        }
+
+        async function uploadFirmware() {
+            const file = document.getElementById("firmware").files[0];
+
+            if (!file) {
+                document.getElementById("status").textContent =
+                    "Select a firmware file.";
+                return;
+            }
+
+            const crc = await calculateCrc32(file);
+
+            document.getElementById("status").textContent =
+                `Size: ${file.size} bytes\nCRC32: ${crc}`;
+
+            const url =
+                `/update?size=${file.size}&crc=${crc}`;
+
+            try {
+                const response = await fetch(url, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/octet-stream"
+                    },
+                    body: file
+                });
+
+                document.getElementById("status").textContent =
+                    `${response.status}: ${await response.text()}`;
+
+            } catch (error) {
+                document.getElementById("status").textContent =
+                    `Connection closed: ${error}\nESP may have restarted.`;
+            }
+        }
+    </script>
+</body>
+
+
+</html>
